@@ -39,10 +39,11 @@ Run:  python examples/agent_tool_gate.py
 Requires only the base install (no API keys).
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any
 
-from decision_governor import Governor, Decision
+from decision_governor import Decision, Governor
 from decision_governor.checks import Check, CheckResult
 from decision_governor.risk import CostStructure, CVaRPolicy
 
