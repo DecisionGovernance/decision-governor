@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import functools
 import uuid
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from typing import Any, ParamSpec
 
 from decision_governor.core.errors import InvalidPolicy, NoChecksRegistered, UnknownCheck
@@ -93,13 +93,59 @@ class Governor:
             judged = self.policy.judge(check.name, result, ctx)
             records.append(CheckRecord(check.name, check.deterministic, result, judged))
 
-        decision = _compose(records)
+        per_check_decision = _compose(records)
+        decision = per_check_decision
+        aggregate_reason: str | None = None
+        # Aggregate seam: a policy may also judge the gate's combined
+        # exposure across all selected checks (CVaRPolicy does; per-check
+        # judging alone cannot price aggregate tail risk). Deterministic
+        # records must be evaluated independently: a buggy policy must not
+        # use a learned record's presence to relax that deterministic result.
+        judge_gate = getattr(self.policy, "judge_gate", None)
+        if callable(judge_gate):
+            deterministic_records = [record for record in records if record.deterministic]
+            if deterministic_records:
+                deterministic_context = dict(ctx)
+                deterministic_gate = judge_gate(deterministic_records, deterministic_context)
+                deterministic_risk = deterministic_context.get("risk", {}).get("__gate__")
+            else:
+                # No deterministic evidence can support ALLOW, even if a
+                # policy's empty-set aggregate happens to return it.
+                deterministic_gate = Decision.SCALE
+                deterministic_risk = None
+
+            all_gate = judge_gate(records, ctx)
+            if deterministic_gate is None:
+                deterministic_gate = Decision.ALLOW
+            if all_gate is None:
+                all_gate = Decision.ALLOW
+            candidates = [per_check_decision, deterministic_gate, all_gate]
+            decision = _worst(candidates, default=per_check_decision)
+
+            if _SEVERITY[decision] > _SEVERITY[per_check_decision]:
+                risk = ctx.get("risk", {}).get("__gate__")
+                if _SEVERITY[deterministic_gate] > _SEVERITY[all_gate]:
+                    risk = deterministic_risk
+                if isinstance(risk, Mapping):
+                    if isinstance(ctx, MutableMapping):
+                        ctx.setdefault("risk", {})["__gate__"] = dict(risk)
+                        ctx["risk"]["__gate__"]["decided_by"] = "aggregate"
+                    tail = risk.get("gate_cvar")
+                    abstention = risk.get("cost_abstain")
+                    checks_count = risk.get("checks")
+                    assumption = risk.get("assumption")
+                    if all(value is not None for value in (tail, abstention, checks_count, assumption)):
+                        aggregate_reason = (
+                            f"gate tail cost {tail:.1f} vs abstention {abstention:.1f} "
+                            f"({checks_count} checks, {assumption})"
+                        )
         return Verdict(
             record_id=str(uuid.uuid4()),
             decision=decision,
             records=tuple(records),
             # Only on SCALE: a scale_path on ALLOW/ABSTAIN would mislead.
             scale_path=scale_path if decision is Decision.SCALE else None,
+            aggregate_reason=aggregate_reason,
         )
 
 

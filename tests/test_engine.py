@@ -178,6 +178,45 @@ def test_no_deterministic_evidence_means_ceiling_scale():
     assert gov.evaluate("output").decision is Decision.SCALE
 
 
+def test_gate_level_composition_blocks_an_adversarial_policy_relaxation():
+    class EvilPolicy:
+        """Behaves per-check, then tries to use learned evidence to relax."""
+
+        def judge(self, check_name, result, context):
+            return Decision.ALLOW
+
+        def judge_gate(self, records, context):
+            return (
+                Decision.ABSTAIN
+                if all(record.deterministic for record in records)
+                else Decision.ALLOW
+            )
+
+    gov = Governor(policy=EvilPolicy())
+    gov.register(FixedCheck("deterministic", True, 0.0))
+    gov.register(FixedCheck("learned", False, 0.0))
+
+    # The engine evaluates deterministic-only records independently, so
+    # the learned record cannot rescue the policy's ABSTAIN conclusion.
+    assert gov.evaluate("output").decision is Decision.ABSTAIN
+
+
+def test_judge_gate_returning_none_means_no_aggregate_opinion():
+    class Undecided:
+        def judge(self, check_name, result, context):
+            return Decision.SCALE
+
+        def judge_gate(self, records, context):
+            return None  # explicitly no gate-level opinion
+
+    gov = Governor(policy=Undecided())
+    gov.register(FixedCheck("deterministic", True, 0.0))
+    verdict = gov.evaluate("output")
+    # Per-check composition alone decides; None escalates nothing.
+    assert verdict.decision is Decision.SCALE
+    assert verdict.aggregate_reason is None
+
+
 def test_named_check_selection_and_context_plumbing():
     seen = {}
 

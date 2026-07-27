@@ -19,6 +19,11 @@ models participate only in roles that can *tighten* a verdict, never loosen
 one — an LLM hallucination inside the Governor can cost a false abstention,
 but can never authorize a bad execution.
 
+Non-deterministic checks are full participants in every verdict, restricted in
+direction rather than in weight: they can be why you stopped, never why you
+proceeded, and only a gate with no deterministic evidence at all is capped
+below ALLOW.
+
 > **Status: pre-release scaffold (v0.1.0.dev0).** Public contracts are frozen;
 > the engine, risk interface, checks, instrumentation, adversarial toolkit,
 > and examples land card by card ahead of the v0.1.0 release. See

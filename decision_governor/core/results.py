@@ -29,6 +29,7 @@ class Verdict:
     decision: Decision
     records: tuple[CheckRecord, ...]
     scale_path: str | None = None
+    aggregate_reason: str | None = None
 
     @property
     def reasons(self) -> list[str]:
@@ -43,6 +44,8 @@ class Verdict:
                 f"(score={r.result.score:.3f}, confidence={r.result.confidence:.3f}): "
                 f"{evidence}"
             )
+        if self.aggregate_reason is not None:
+            lines.append(self.aggregate_reason)
         return lines
 
 

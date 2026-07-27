@@ -15,7 +15,15 @@ from decision_governor.core.types import CheckResult, Decision
 
 @runtime_checkable
 class Policy(Protocol):
-    """Anything with judge() is a policy."""
+    """Anything with judge() is a policy.
+
+    A policy may additionally define judge_gate(records, context) ->
+    Decision | None to price the gate's combined exposure across all
+    selected checks (CVaRPolicy does). When present, the engine evaluates
+    it once on deterministic records and once on all records, then takes
+    the stricter result with the per-check composition. That structural
+    max prevents learned records from relaxing a gate-level verdict.
+    """
 
     def judge(
         self, check_name: str, result: CheckResult, context: Mapping[str, Any]
