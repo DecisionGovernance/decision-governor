@@ -167,3 +167,25 @@ Release blockers closed (July 27, 2026 — review findings P1x2, P2x1):
    is 96 passed, ruff clean, mypy clean, coverage 95% (uncovered
    remainder unchanged in kind). The pin-freeze run remains the
    recorded G-3 tail.
+
+Pin freeze executed — the G-3 tail closes (July 27, 2026): both models
+downloaded and both digests computed from real weights via the freeze
+tool, committed to PINS, and round-trip verified against the local
+cache (embedding: all-MiniLM-L6-v2 @ 1110a243, sha256 6c86ea69...;
+nli: DeBERTa-v3-base-mnli-fever-anli @ 6f5cf0a2, sha256 bc0c4917...).
+Two surprises surfaced, exactly as the front-loading intended:
+(1) the machine was under memory pressure (0.6GB free of 15.3GB) — the
+full [llm] install MemoryError'd and OpenBLAS could not allocate;
+resolved for the digest task by installing huggingface_hub alone,
+since freeze() needs only download+hash, never torch. The full
+inference stack ([llm] extra) remains uninstalled on this machine —
+default checks now CONSTRUCT (pins frozen) and load() will work once
+[llm] installs on a machine with free RAM; on this one it fails with
+the actionable ModelDepsMissing, which is the correct message.
+(2) Windows symlink privilege (WinError 1314) broke the hub cache
+materialization for the larger model; HF_HUB_DISABLE_SYMLINKS=1 is the
+working setting on this machine and worth a docs note at G-8.
+Guard tests re-pinned to monkeypatched unfrozen state (the behavior,
+not the shipped state), and a new fixture asserts the shipped
+embedding pin is genuinely frozen with a real 64-hex digest. Suite
+after freeze: 97 passed, ruff clean, mypy clean, coverage 95%.

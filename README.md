@@ -1,5 +1,9 @@
 # Decision Governor
 
+[![CI](https://github.com/DecisionGovernance/decision-governor/actions/workflows/ci.yml/badge.svg)](https://github.com/DecisionGovernance/decision-governor/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+
 **Risk governance for AI outputs and actions: allow / scale / abstain.**
 
 Decision Governor stands between an AI system's outputs and their consequences.

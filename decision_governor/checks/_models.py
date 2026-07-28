@@ -32,13 +32,17 @@ from decision_governor.core.errors import GovernorError
 PINS: dict[str, dict[str, str | None]] = {
     "nli": {
         "repo": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
-        "revision": None,   # frozen by the freeze tool on first download
-        "sha256": None,
+        # Frozen July 27, 2026 via the freeze tool; digest computed from
+        # the downloaded weights.
+        "revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb",
+        "sha256": "bc0c491784bb51080bd5044f0326bcac8b87fd2ffe8dea36f7628de8bb5448e5",
     },
     "embedding": {
         "repo": "sentence-transformers/all-MiniLM-L6-v2",
-        "revision": None,
-        "sha256": None,
+        # Frozen July 27, 2026 via the freeze tool; digest computed from
+        # the downloaded weights.
+        "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "sha256": "6c86ea69c9c2077930fcac4cc72b642a06ffae52396043401ceeb95769e0d338",
     },
 }
 

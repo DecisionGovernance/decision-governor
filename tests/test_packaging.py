@@ -21,10 +21,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 @pytest.fixture(scope="module")
 def wheel(tmp_path_factory):
     out = tmp_path_factory.mktemp("wheel")
+    # Default (isolated) build on purpose: pip installs build-system.requires
+    # into a throwaway env, exactly as a stranger's `pip install` would.
+    # --no-build-isolation broke on CI's Python 3.12, where setuptools is no
+    # longer bundled in the test environment.
     build = subprocess.run(
         [
             sys.executable, "-m", "pip", "wheel", str(REPO_ROOT),
-            "--no-deps", "--no-build-isolation", "-w", str(out), "-q",
+            "--no-deps", "-w", str(out), "-q",
         ],
         capture_output=True,
         text=True,

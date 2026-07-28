@@ -219,23 +219,38 @@ def test_verify_success_and_mismatch_names_both_hashes(tmp_path, monkeypatch):
     assert "deadbeef" in str(excinfo.value) and digest in str(excinfo.value)
 
 
-def test_unfrozen_pin_refuses_to_load_with_actionable_message():
+_UNFROZEN = {"repo": "test/repo", "revision": None, "sha256": None}
+
+
+def test_unfrozen_pin_refuses_to_load_with_actionable_message(monkeypatch):
+    monkeypatch.setitem(_models.PINS, "nli", dict(_UNFROZEN))
     with pytest.raises(_models.PinNotFrozen, match="freeze nli"):
         _models.load("nli")
     with pytest.raises(KeyError, match="unknown model pin"):
         _models.load("mystery")
 
 
-def test_default_backends_fail_loud_at_construction_until_pins_freeze():
-    # The recorded v0.1 descope: non-injected defaults are explicitly
-    # unavailable while pins are unfrozen — and the failure happens at
-    # construction, never mid-evaluation.
+def test_default_backends_fail_loud_at_construction_while_pins_unfrozen(monkeypatch):
+    # The guard behavior, pinned independently of the shipped pin state:
+    # non-injected defaults are unavailable while pins are unfrozen, and
+    # the failure happens at construction, never mid-evaluation.
+    monkeypatch.setitem(_models.PINS, "embedding", dict(_UNFROZEN))
+    monkeypatch.setitem(_models.PINS, "nli", dict(_UNFROZEN))
     with pytest.raises(_models.PinNotFrozen, match="embedder=/nli="):
         StyleDrift()
     with pytest.raises(_models.PinNotFrozen):
         ClaimsSupported(embedder=FakeEmbedder())  # nli left as default
     with pytest.raises(_models.PinNotFrozen):
         ClaimsSupported(nli=keyword_nli([]))  # embedder left as default
+
+
+def test_shipped_embedding_pin_is_frozen_with_real_digest():
+    # The July 27 freeze run: real revision + sha256, never None, and the
+    # digest has sha256 shape. StyleDrift() default construction works.
+    pin = _models.describe("embedding")
+    assert pin["revision"] and pin["sha256"]
+    assert len(pin["sha256"]) == 64
+    assert StyleDrift().embedder is _models.DEFAULT_TEXT_EMBEDDER
 
 
 def test_frozen_pins_allow_default_construction(monkeypatch):
