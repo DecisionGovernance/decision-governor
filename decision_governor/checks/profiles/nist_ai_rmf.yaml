@@ -1,0 +1,72 @@
+# NIST AI RMF profile for Decision Governor v0.1.
+# Honesty rule: rows mapping to capabilities that do not exist yet
+# (decision_logging lands in G-4, the adversarial toolkit in G-5) render
+# not_covered until the capability is real. The not_covered rows are what
+# make the covered rows credible.
+
+- id: GOVERN-1.1
+  requirement: Legal and regulatory requirements are understood and documented
+  check_type: attested
+
+- id: GOVERN-1.5
+  requirement: Ongoing monitoring with defined organizational roles
+  check_type: attested
+
+- id: GOVERN-4.1
+  requirement: Organizational risk tolerances are defined and expressed
+  check_type: automated
+  capability: cost_structures
+
+- id: MAP-1.1
+  requirement: Intended purposes and context of use are understood
+  check_type: attested
+
+- id: MAP-5.1
+  requirement: Likelihood and magnitude of impacts are characterized
+  check_type: automated
+  capability: cvar_policy
+
+- id: MEASURE-2.3
+  requirement: AI system performance is measured against deployment context
+  check_type: automated
+  capability: dynamic_thresholds
+
+- id: MEASURE-2.5
+  requirement: AI system validity and reliability are demonstrated
+  check_type: automated
+  capability: deterministic_verdicts
+
+- id: MEASURE-2.7
+  requirement: AI system security and resilience are evaluated
+  check_type: automated
+  capability: adversarial_toolkit    # lands in G-5; not_covered until then
+
+- id: MEASURE-2.8
+  requirement: Risks are tracked with transparent measurement over time
+  check_type: automated
+  capability: decision_logging       # lands in G-4; not_covered until then
+
+- id: MEASURE-2.11
+  requirement: Fairness and bias are evaluated with results documented
+  check_type: automated
+  capability: protected_attribute_leak_check
+
+- id: MEASURE-2.12
+  requirement: Environmental impact is assessed
+  check_type: automated
+  capability: environmental_assessment   # v0.1 does not do this; not_covered
+
+- id: MANAGE-1.3
+  requirement: Responses to identified risks are prioritized and executed
+  check_type: automated
+  capability: tighten_only_composition
+
+- id: MANAGE-2.2
+  requirement: Mechanisms to sustain the value of deployed systems
+  check_type: automated
+  capability: verdict_disparity_monitor
+
+- id: MANAGE-4.1
+  requirement: Post-deployment monitoring plans are implemented
+  check_type: automated
+  capability: decision_logging       # lands in G-4; not_covered until then

@@ -20,13 +20,20 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-# Base install: no LLM SDKs, no API keys. Numeric + storage only.
+# Base install: no LLM SDKs, no API keys. Numeric + storage + profiles only.
 dependencies = [
   "numpy>=1.24",
+  "pyyaml>=6.0",   # compliance profile loading (checks/profiles/*.yaml)
 ]
 
 [project.optional-dependencies]
-llm = []          # judge adapter deps land in G-7 (pinned there, not here)
+# Model-backed check defaults (style_drift, claims_supported) and the pin
+# freeze tool; G-7's judge adapter deps land here too when that card runs.
+llm = [
+  "huggingface_hub>=0.21",
+  "sentence-transformers>=2.4",
+  "transformers>=4.39",
+]
 fastapi = ["fastapi>=0.110"]
 a11y = []         # axe-core bridge deps land in G-6 if the timebox allows
 dev = [
@@ -36,6 +43,7 @@ dev = [
   "mypy>=1.8",
   "ruff>=0.3",
   "pre-commit>=3.6",
+  "wheel>=0.43",   # the packaging smoke test builds a real wheel
 ]
 
 [project.urls]
@@ -48,6 +56,9 @@ governor = "decision_governor.instrumentation.cli:main"
 [tool.setuptools.packages.find]
 include = ["decision_governor*"]
 
+[tool.setuptools.package-data]
+decision_governor = ["checks/profiles/*.yaml"]
+
 [tool.mypy]
 python_version = "3.10"
 strict = false
@@ -55,6 +66,12 @@ strict = false
 [[tool.mypy.overrides]]
 module = ["decision_governor.core.*", "decision_governor.risk.*"]
 strict = true          # the frozen contracts are held to the highest bar
+
+[[tool.mypy.overrides]]
+# Optional model/serialization deps: imported lazily, absent on the base
+# install by design.
+module = ["huggingface_hub", "sentence_transformers", "transformers", "yaml"]
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100

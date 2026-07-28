@@ -31,4 +31,10 @@ audit_bundle*/
 .idea/
 .DS_Store
 
-.github/skills/
+# Keep internal skills local by default; version the skills required to govern
+# frozen contracts and the active build-card workflow.
+.github/skills/*
+!.github/skills/decision-governor-contracts/
+!.github/skills/decision-governor-contracts/**
+!.github/skills/decision-governor-build-cards/
+!.github/skills/decision-governor-build-cards/**
