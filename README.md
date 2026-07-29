@@ -22,6 +22,27 @@ ABSTAIN  decline, with reasons
 
 ---
 
+## Install for testing
+
+To try the pre-release code from this repository, create an isolated environment
+and install the checkout in editable mode:
+
+```bash
+python -m venv .venv
+source .venv/Scripts/activate  # Git Bash on Windows
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+Run the test suite to verify the checkout:
+
+```bash
+python -m pytest -q
+```
+
+Production installation remains available with the v0.1.0 PyPI release on
+August 8, 2026.
+
 ## How a decision happens
 
 ```mermaid
