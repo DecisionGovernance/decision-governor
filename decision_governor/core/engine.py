@@ -12,7 +12,12 @@ import uuid
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from typing import Any, ParamSpec
 
-from decision_governor.core.errors import InvalidPolicy, NoChecksRegistered, UnknownCheck
+from decision_governor.core.errors import (
+    InvalidPolicy,
+    NoChecksRegistered,
+    NoLogConfigured,
+    UnknownCheck,
+)
 from decision_governor.core.policy import Policy, ThresholdPolicy
 from decision_governor.core.results import CheckRecord, GateResult, Verdict
 from decision_governor.core.types import Check, Decision
@@ -56,7 +61,14 @@ class Governor:
         if not callable(getattr(chosen, "judge", None)):
             raise InvalidPolicy(chosen, missing="judge")
         self.policy = chosen
-        self.log = log  # accepted and held unused: the G-4 seam, pre-cut
+        if log is not None:
+            # The G-4 seam, now live: Sink object, path string (SQLite),
+            # or None. Lazy import keeps core importable on its own.
+            from decision_governor.instrumentation.sinks import resolve_sink
+
+            self.log = resolve_sink(log)
+        else:
+            self.log = None
         self.deployment = deployment
         self._registry: dict[str, Check] = {}
 
@@ -96,6 +108,7 @@ class Governor:
         per_check_decision = _compose(records)
         decision = per_check_decision
         aggregate_reason: str | None = None
+        aggregate_binds = False
         # Aggregate seam: a policy may also judge the gate's combined
         # exposure across all selected checks (CVaRPolicy does; per-check
         # judging alone cannot price aggregate tail risk). Deterministic
@@ -121,6 +134,10 @@ class Governor:
                 all_gate = Decision.ALLOW
             candidates = [per_check_decision, deterministic_gate, all_gate]
             decision = _worst(candidates, default=per_check_decision)
+            aggregate_binds = (
+                max(_SEVERITY[deterministic_gate], _SEVERITY[all_gate])
+                == _SEVERITY[decision]
+            )
 
             if _SEVERITY[decision] > _SEVERITY[per_check_decision]:
                 risk = ctx.get("risk", {}).get("__gate__")
@@ -139,14 +156,67 @@ class Governor:
                             f"gate tail cost {tail:.1f} vs abstention {abstention:.1f} "
                             f"({checks_count} checks, {assumption})"
                         )
-        return Verdict(
+        # decided_by tri-state (Sunday Review 1 clarification): which
+        # mechanism was DECISIVE, most structural first when several bind
+        # at the final severity — ceiling > aggregate > per_check, where
+        # "ceiling" means the engine's no-deterministic-evidence SCALE cap
+        # exclusively (the policy's CVaR bar remains the per-check
+        # allow_barred_by_ceiling fact in the risk block). ALLOW verdicts
+        # are always per_check: nothing constrained, so nothing "bound".
+        has_deterministic = any(record.deterministic for record in records)
+        if _SEVERITY[decision] == 0:
+            decided_by = "per_check"
+        elif not has_deterministic and decision is Decision.SCALE:
+            decided_by = "ceiling"
+        elif aggregate_binds:
+            decided_by = "aggregate"
+        else:
+            decided_by = "per_check"
+
+        verdict = Verdict(
             record_id=str(uuid.uuid4()),
             decision=decision,
             records=tuple(records),
             # Only on SCALE: a scale_path on ALLOW/ABSTAIN would mislead.
             scale_path=scale_path if decision is Decision.SCALE else None,
             aggregate_reason=aggregate_reason,
+            decided_by=decided_by,
         )
+        if self.log is not None:
+            # Loud, but not lossy: the verdict is fully formed before the
+            # write attempt; on failure it rides out on the error.
+            from decision_governor.instrumentation.errors import LogWriteError
+            from decision_governor.instrumentation.records import build_record
+
+            describes = {}
+            for check in selected:
+                describe_fn = getattr(check, "describe", None)
+                describes[check.name] = (
+                    describe_fn()
+                    if callable(describe_fn)
+                    else {"name": check.name, "deterministic": check.deterministic}
+                )
+            try:
+                self.log.write(
+                    build_record(verdict, self.policy, ctx, self.deployment, describes)
+                )
+            except Exception as exc:
+                raise LogWriteError(verdict, exc) from exc
+        return verdict
+
+    def report_outcome(
+        self,
+        record_id: str,
+        ok: bool,
+        detail: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Amend the stored record's execution outcome (the system's only
+        mutation; provenance, never a recomputation input)."""
+        if self.log is None:
+            raise NoLogConfigured()
+        from decision_governor.instrumentation.outcomes import report_outcome
+
+        return report_outcome(self.log, record_id, ok, detail)
 
 
 def gate(

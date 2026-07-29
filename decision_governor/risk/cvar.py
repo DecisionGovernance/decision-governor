@@ -81,16 +81,17 @@ class CVaRPolicy:
     a *deontic* bar, distinct from the *economic* argmin below it: some
     tail exposures are impermissible regardless of price, and only the
     permitted verdicts get priced. ALLOW is barred when tail loss exceeds
-    ceiling_fraction x the full error cost; in probability space that is
-    p > alpha x ceiling_fraction (default 0.5: at alpha = 0.05, ALLOW is
-    barred whenever effective violation probability exceeds 2.5%). The
-    ceiling is a fraction of the error cost, not an absolute number, so
-    it scales with stakes automatically — re-denominating costs never
-    requires re-tuning it. Because ceiling and cost scale together,
-    raising a cost raises both the tail loss and the bar proportionally,
-    so the "raising any cost never moves a verdict toward ALLOW" property
-    stays provable rather than accidentally true. The risk block records
-    which kind of "no" fired via allow_barred_by_ceiling.
+    ceiling_fraction x the full error cost. For p < alpha, this is
+    p > alpha x ceiling_fraction; with the default 0.5 ceiling, it is
+    p > alpha/2 (2.5% at alpha = 0.05). At p >= alpha, the Bernoulli
+    tail is the full error cost and therefore exceeds any ceiling below
+    1.0. The ceiling is a fraction of the error cost, not an absolute
+    number, so it scales with stakes automatically — re-denominating
+    costs never requires re-tuning it. Because ceiling and cost scale
+    together, raising a cost raises both the tail loss and the bar
+    proportionally, so the "raising any cost never moves a verdict toward
+    ALLOW" property stays provable rather than accidentally true. The
+    risk block records which kind of "no" fired via allow_barred_by_ceiling.
 
     Ties break toward the SAFER verdict — a policy indifferent between
     ALLOW and SCALE must SCALE; that is CVaR's asymmetry expressed at the

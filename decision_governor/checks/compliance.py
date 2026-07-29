@@ -13,11 +13,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-# Capabilities that exist in the codebase TODAY. decision_logging and the
-# adversarial toolkit are deliberately absent until G-4/G-5 land — profile
-# rows mapping to them render not_covered until the capability is real.
+# Capabilities that exist in the codebase TODAY. The adversarial toolkit
+# is deliberately absent until G-5 lands — profile rows mapping to it
+# render not_covered until the capability is real. decision_logging
+# flipped to covered when G-4 landed (July 28, 2026), exactly as designed.
 SDK_CAPABILITIES: frozenset[str] = frozenset(
     {
+        "decision_logging",
         "tighten_only_composition",
         "deterministic_verdicts",
         "cvar_policy",

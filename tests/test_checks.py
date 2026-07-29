@@ -603,11 +603,14 @@ def test_nist_rmf_profile_loads_and_is_honest():
     assert len(items) >= 10
     report = evaluate_checklist(items)
     # The honesty test: capabilities that don't exist yet render
-    # not_covered — decision_logging rows stay red until G-4 lands.
+    # not_covered. decision_logging flipped to covered when G-4 landed —
+    # the designed self-updating behavior — while the adversarial
+    # toolkit stays red until G-5 is real.
+    covered_capabilities = {i.capability for i in report.covered}
     not_covered_capabilities = {i.capability for i in report.not_covered}
-    assert "decision_logging" in not_covered_capabilities
+    assert "decision_logging" in covered_capabilities
     assert "adversarial_toolkit" in not_covered_capabilities
-    assert len(report.covered) >= 5  # and the real capabilities show green
+    assert len(report.covered) >= 7
     assert 0.0 < report.coverage < 1.0
 
 

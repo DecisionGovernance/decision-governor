@@ -20,12 +20,14 @@ exceeds half the full error cost, no matter what the argmin says).
 The ceiling deserves a sentence of its own, because it is a different
 *kind* of "no" than the cost minimization. The ceiling is a **deontic
 bar**: some tail exposures are impermissible regardless of price. The
-argmin is the **economic choice** among the verdicts that remain. In
-probability space the bar reads: ALLOW is barred whenever
-p > alpha x ceiling_fraction — here, whenever violation probability
-exceeds 0.05 x 0.5 = **2.5%**. The decision record states which "no"
-fired (`allow_barred_by_ceiling`), and the ceiling is a *fraction* of
-the error cost rather than an absolute number so it scales with stakes
+argmin is the **economic choice** among the verdicts that remain. When
+p < alpha, the bar reads p > alpha x ceiling_fraction; with this
+example's `ceiling_fraction = 0.5`, that is p > alpha/2, or a violation
+probability above 0.05 x 0.5 = **2.5%**. At p >= alpha the Bernoulli
+tail is already the full error cost, so it also exceeds this example's
+half-cost ceiling. The decision record states which "no" fired
+(`allow_barred_by_ceiling`), and the ceiling is a *fraction* of the
+error cost rather than an absolute number so it scales with stakes
 automatically: re-denominating costs never requires re-tuning it, and
 because ceiling and cost scale together, raising a cost raises both the
 tail loss and the bar proportionally — which is what keeps the
@@ -57,7 +59,8 @@ the tail, so the tail is 72% occupied by loss: cvar_allow =
 
 Row-by-row, by hand:
 
-- **Row 1** — the deontic bar fires first: p = 0.036 > alpha/2 = 0.025,
+- **Row 1** — because `ceiling_fraction = 0.5` and p = 0.036 < alpha =
+  0.05, the deontic bar is p > alpha/2 = 0.025. It fires here;
   equivalently cvar_allow = (0.036/0.05) x 100 = 72.0 > 50, so **ALLOW
   is barred by the ceiling** and only SCALE and ABSTAIN get priced.
   cost_scale = 0.3 x 72.0 + 3.0 x 0.5 = 21.6 + 1.5 = 23.1.
@@ -144,7 +147,9 @@ pessimistic, so gates with more than 12 active checks can receive
 stricter verdicts than independent exact mathematics would produce.
 
 Two deterministic checks, each score 0.001 x confidence 1.0 against a
-100-unit error cost, with alpha = 0.05 and abstention = 3:
+100-unit error cost, with alpha = 0.05, abstention = 3,
+`scale_mitigation = 0.3`, and `scale_friction = 0.5`. The latter is a
+concrete 0.5 x 3 = 1.5-unit scale-path friction in this fixture:
 
 - Each check alone: cvar = (0.001/0.05) x 100 = 2.0; argmin(2.0, 2.1,
   3.0) → **ALLOW**, twice.

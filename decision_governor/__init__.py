@@ -4,6 +4,7 @@ from decision_governor.core.errors import (
     GovernorError,
     InvalidPolicy,
     NoChecksRegistered,
+    NoLogConfigured,
     UnknownCheck,
 )
 from decision_governor.core.policy import Policy, ThresholdPolicy
@@ -22,6 +23,7 @@ __all__ = [
     "GovernorError",
     "InvalidPolicy",
     "NoChecksRegistered",
+    "NoLogConfigured",
     "Policy",
     "ThresholdPolicy",
     "UnknownCheck",

@@ -28,6 +28,14 @@ class UnknownCheck(GovernorError):
         self.registered = names
 
 
+class NoLogConfigured(GovernorError):
+    def __init__(self) -> None:
+        super().__init__(
+            "this Governor has no decision log: construct it with "
+            "log='decisions.db' (or a Sink) before calling report_outcome()."
+        )
+
+
 class InvalidPolicy(GovernorError):
     def __init__(self, policy: object, missing: str = "judge") -> None:
         super().__init__(

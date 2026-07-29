@@ -30,6 +30,9 @@ class Verdict:
     records: tuple[CheckRecord, ...]
     scale_path: str | None = None
     aggregate_reason: str | None = None
+    # Which mechanism was decisive: "per_check" | "aggregate" | "ceiling"
+    # (ceiling = the engine's no-deterministic-evidence cap exclusively).
+    decided_by: str = "per_check"
 
     @property
     def reasons(self) -> list[str]:
