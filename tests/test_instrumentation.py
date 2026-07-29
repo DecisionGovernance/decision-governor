@@ -22,6 +22,7 @@ from decision_governor import (
     Governor,
     NoLogConfigured,
 )
+from decision_governor.core.policy import ThresholdPolicy
 from decision_governor.instrumentation import (
     BUNDLE_HASH_RECIPE,
     CallbackSink,
@@ -43,7 +44,6 @@ from decision_governor.instrumentation import (
     validate_record,
     verify,
 )
-from decision_governor.core.policy import ThresholdPolicy
 from decision_governor.instrumentation.cli import main as cli_main
 from decision_governor.risk import CostStructure, CVaRPolicy
 
