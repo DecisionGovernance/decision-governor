@@ -57,7 +57,7 @@ governor = "decision_governor.instrumentation.cli:main"
 include = ["decision_governor*"]
 
 [tool.setuptools.package-data]
-decision_governor = ["checks/profiles/*.yaml"]
+decision_governor = ["checks/profiles/*.yaml", "adversarial/data/*.jsonl", "adversarial/action.yml"]
 
 [tool.mypy]
 python_version = "3.10"

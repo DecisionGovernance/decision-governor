@@ -1,0 +1,29 @@
+name: "Decision Governor — adversarial gate"
+description: >
+  Run the Decision Governor adversarial toolkit against a gate and fail the
+  build when a whitelisted metric expression is breached.
+inputs:
+  target:
+    description: "module:attribute resolving to a gate or a factory returning one"
+    required: true
+  db:
+    description: "path to a decision log (SQLite) for cascade/calibration"
+    required: false
+    default: ""
+  fail-on:
+    description: "whitelisted failure expression, e.g. 'cbw > 0.02 or injection_pass < 0.95'"
+    required: true
+  seed:
+    description: "seed for randomized tools (shift, cascade)"
+    required: false
+    default: "1234"
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      run: >
+        python -m decision_governor.adversarial
+        --target "${{ inputs.target }}"
+        ${{ inputs.db && format('--db {0}', inputs.db) || '' }}
+        --seed "${{ inputs.seed }}"
+        --fail-on "${{ inputs.fail-on }}"
