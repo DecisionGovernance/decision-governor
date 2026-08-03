@@ -106,6 +106,10 @@ def run(
     """
     if seed is None:
         raise ValueError("shift.run requires an explicit seed — reproducibility is the API")
+    if trials < 1:
+        raise ValueError(f"trials must be >= 1, got {trials} — zero trials would report a gate that was never tested")
+    if not fixtures:
+        raise ValueError("shift.run requires at least one fixture — an empty fixture set has nothing to perturb")
     names = list(perturbations) if perturbations is not None else list(PERTURBATIONS)
     unknown = [n for n in names if n not in PERTURBATIONS]
     if unknown:

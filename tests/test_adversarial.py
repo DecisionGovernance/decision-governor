@@ -76,6 +76,23 @@ def test_shift_requires_a_seed():
         shift.run(build_example_gate(), [], seed=None)
 
 
+def test_shift_rejects_degenerate_trials():
+    # trials=0 would skip the loop entirely and report "no loosening flips
+    # over 0 perturbed trials" — a passing verdict on a gate never tested.
+    fixtures = [{"output": "A neutral summary.", "context": {}}]
+    with pytest.raises(ValueError, match="trials must be >= 1"):
+        shift.run(build_example_gate(), fixtures, seed=1, trials=0)
+    with pytest.raises(ValueError, match="trials must be >= 1"):
+        shift.run(build_example_gate(), fixtures, seed=1, trials=-3)
+
+
+def test_shift_rejects_an_empty_fixture_set():
+    # Same flattering-degenerate-input class as cascade's empty-marginals
+    # guard: no fixtures means zero trials and a vacuous pass.
+    with pytest.raises(ValueError, match="at least one fixture"):
+        shift.run(build_example_gate(), [], seed=1)
+
+
 # -------------------------------------------------------------- cascade (Step 4)
 
 

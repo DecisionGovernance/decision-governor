@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python -m mypy decision_governor | Select-Object -Last 3; echo \"exit: $LASTEXITCODE\")",
+      "PowerShell(python -m pytest --no-cov 2>$null)",
+      "PowerShell(python examples/inclusive_html_gate.py)"
+    ]
+  }
+}
