@@ -59,7 +59,12 @@ def test_wheel_declares_the_runtime_deps_the_code_imports(wheel):
     # must actually install the model stack. METADATA normalizes names to
     # hyphens (PEP 503), so compare in normalized form.
     normalized = [line.replace("_", "-") for line in requires]
-    for dep in ("huggingface-hub", "sentence-transformers", "transformers"):
+    for dep in ("huggingface-hub", "sentence-transformers", "transformers",
+                "openai", "anthropic"):
         assert any(dep in line and 'extra == "llm"' in line for line in normalized), (
             f"{dep} missing from the [llm] extra:\n" + "\n".join(requires)
         )
+    # The G-7 middleware's extra ships FastAPI.
+    assert any(
+        "fastapi" in line and 'extra == "fastapi"' in line for line in normalized
+    )

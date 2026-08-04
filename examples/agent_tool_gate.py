@@ -21,8 +21,10 @@ Three ideas to notice while reading:
 
 1.  Costs are denominated in the action's real units. A bad
     email costs reputation; a bad refund costs dollars; a bad
-    deletion may be irreversible. The CostStructure makes the
-    policy speak the domain's own language.
+    deletion here costs skipped review (the deployment keeps a
+    soft-delete window, so the data itself is recoverable).
+    The CostStructure makes the policy speak the domain's own
+    language — price the failure you would actually eat.
 
 2.  Deterministic checks do most of the work. Allowlists,
     limits, and PII scans are exact, reproducible, and — per
@@ -43,8 +45,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from decision_governor import Decision, Governor
-from decision_governor.checks import Check, CheckResult
+from decision_governor import Check, CheckResult, Decision, Governor
 from decision_governor.risk import CostStructure, CVaRPolicy
 
 # ------------------------------------------------------------
@@ -75,6 +76,14 @@ class RecipientAllowlist(Check):
         if output.tool != "send_email":
             return CheckResult(score=0.0, confidence=1.0, evidence=["n/a"])
         rcpt = output.args.get("to", "")
+        if not isinstance(rcpt, str):
+            # Malformed args are permitted by the Mapping[str, Any]
+            # contract, so they must become a verdict, not a crash: an
+            # unreadable recipient is certainly not allowlisted.
+            return CheckResult(
+                score=1.0, confidence=1.0,
+                evidence=[f"malformed recipient {rcpt!r} — not a string, never allowlisted"],
+            )
         ok = rcpt.endswith(self.ALLOWED)
         return CheckResult(
             score=0.0 if ok else 1.0,
@@ -94,7 +103,17 @@ class RefundLimit(Check):
     def run(self, output: ToolCall, context) -> CheckResult:
         if output.tool != "issue_refund":
             return CheckResult(score=0.0, confidence=1.0, evidence=["n/a"])
-        amt = float(output.args.get("amount", 0))
+        raw = output.args.get("amount", 0)
+        try:
+            amt = float(raw)
+        except (TypeError, ValueError):
+            # An unpriceable refund cannot be within the caps: score it
+            # as a certain violation so the governor records and routes
+            # the action instead of crashing before a verdict exists.
+            return CheckResult(
+                score=1.0, confidence=1.0,
+                evidence=[f"malformed amount {raw!r} — not a number, cannot be within caps"],
+            )
         if amt <= self.SOFT:
             score = 0.0
         elif amt <= self.HARD:
@@ -145,12 +164,26 @@ costs = CostStructure(
     unauthorized_email=300.0,     # reputational + compliance exposure
     excess_refund=1.0,            # per-dollar over-refund exposure
     injected_action=800.0,        # executing an attacker's instruction
-    irreversible_loss=1000.0,     # unrecoverable deletion
+    hasty_deletion=6.0,           # this deployment keeps a soft-delete
+                                  # window, so data loss is recoverable;
+                                  # what a bad deletion actually costs
+                                  # here is review skipped in haste
     abstention=5.0,               # blocked work: never free, never huge
 )
 
 gov = Governor(
-    policy=CVaRPolicy(alpha=0.05, costs=costs),
+    policy=CVaRPolicy(
+        alpha=0.05,
+        costs=costs,
+        # Explicit mapping, no silent default: every check names the
+        # cost it puts at risk.
+        cost_map={
+            "recipient_allowlist": "unauthorized_email",
+            "refund_limit": "excess_refund",
+            "injection_provenance": "injected_action",
+            "irreversible_action": "hasty_deletion",
+        },
+    ),
     log="agent_decisions.db",
     deployment="agent-tool-gate-example",
 )

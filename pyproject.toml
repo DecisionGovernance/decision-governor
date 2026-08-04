@@ -27,12 +27,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Model-backed check defaults (style_drift, claims_supported) and the pin
-# freeze tool; G-7's judge adapter deps land here too when that card runs.
+# Model-backed check defaults (style_drift, claims_supported), the pin
+# freeze tool, and the G-7 judge adapter's provider SDKs. All imported
+# lazily — never at package top level.
 llm = [
   "huggingface_hub>=0.21",
   "sentence-transformers>=2.4",
   "transformers>=4.39",
+  "openai>=1.30",
+  "anthropic>=0.34",
 ]
 fastapi = ["fastapi>=0.110"]
 a11y = []         # axe-core bridge deps land in G-6 if the timebox allows
@@ -44,6 +47,8 @@ dev = [
   "ruff>=0.3",
   "pre-commit>=3.6",
   "wheel>=0.43",   # the packaging smoke test builds a real wheel
+  "fastapi>=0.110",  # CI exercises the real Depends path (base-import test still blocks it)
+  "httpx>=0.27",     # fastapi.testclient's transport
 ]
 
 [project.urls]
@@ -70,12 +75,19 @@ strict = true          # the frozen contracts are held to the highest bar
 [[tool.mypy.overrides]]
 # Optional model/serialization deps: imported lazily, absent on the base
 # install by design.
-module = ["huggingface_hub", "sentence_transformers", "transformers", "yaml"]
+module = [
+  "huggingface_hub", "sentence_transformers", "transformers", "yaml",
+  "fastapi", "openai", "anthropic",
+]
 ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint.flake8-bugbear]
+# The FastAPI dependency-injection idiom: Depends() in a default is the API.
+extend-immutable-calls = ["fastapi.Depends"]
 
 [tool.pytest.ini_options]
 addopts = "-q --cov=decision_governor --cov-report=term-missing"
