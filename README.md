@@ -63,30 +63,88 @@ Only deterministic evidence can support `ALLOW`. With no deterministic checks in
 
 ## Quickstart
 
+Runs verbatim on the base install: **no API keys, no LLM-provider SDKs, CPU-only.**
+
 ```python
 from decision_governor import Governor, gate
+from decision_governor.checks import PIILeak
 from decision_governor.risk import CostStructure, CVaRPolicy
 
 costs = CostStructure(
-    unsupported_claim=50.0,   # a fabricated fact reaching a reader
-    pii_exposure=200.0,
+    pii_exposure=200.0,       # a customer identifier reaching a reader
     abstention=2.0,           # refusing is never free
 )
-gov = Governor(policy=CVaRPolicy(alpha=0.05, costs=costs), log="decisions.db")
+gov = Governor(
+    policy=CVaRPolicy(
+        alpha=0.05,
+        costs=costs,
+        # Every check names the cost it puts at risk: no silent defaults.
+        cost_map={"pii_leak": "pii_exposure"},
+    ),
+    log="decisions.db",
+)
+gov.register(PIILeak())      # a Governor starts empty; checks are explicit
 
-@gate(gov, checks=["claims_supported", "pii_leak"],
-      facts=lambda ctx: ctx["source_document"])
+class DemoLLM:               # stand-in, so this block runs as written
+    def complete(self, prompt: str) -> str:
+        return "The contract runs for three years and renews annually."
+
+@gate(gov, checks=["pii_leak"], scale_path="human_review")
 def summarize(llm, source_document: str) -> str:
     return llm.complete(f"Summarize: {source_document}")
 
-result = summarize(llm, source_document=contract_text)
+result = summarize(DemoLLM(), source_document="Your source text here.")
 if result.decision.allowed:
     print(result.output)
 else:
     print(result.reasons)   # every escalation is traceable to its evidence
 ```
 
-Base install: **no API keys, no LLM-provider SDKs, CPU-only.** Claims are verified against *your* supplied fact source (grounded verification — the honest scope of hallucination screening), by pinned models whose hashes are checked at install.
+Swap `DemoLLM` for your own client and the gate is unchanged — it governs the output, not the caller.
+
+### Part 2 — model-backed claim verification
+
+`claims_supported` verifies the output's claims against *your* supplied fact source (grounded verification — the honest scope of hallucination screening), by pinned models whose hashes are checked at load. It is **not** in the base install:
+
+```console
+$ pip install "decision-governor[llm]"
+```
+
+Continuing from the quickstart above (the `DemoLLM` stand-in is reused):
+
+```python
+from decision_governor import Governor, gate
+from decision_governor.checks import ClaimsSupported, PIILeak
+from decision_governor.risk import CostStructure, CVaRPolicy
+
+gov = Governor(
+    policy=CVaRPolicy(
+        alpha=0.05,
+        costs=CostStructure(
+            unsupported_claim=50.0,   # a fabricated fact reaching a reader
+            pii_exposure=200.0,
+            abstention=2.0,
+        ),
+        cost_map={"claims_supported": "unsupported_claim",
+                  "pii_leak": "pii_exposure"},
+    ),
+    log="decisions.db",
+)
+for check in (PIILeak(), ClaimsSupported()):
+    gov.register(check)
+
+# `facts` receives the wrapped call's KEYWORD arguments and returns the
+# fact source to check the output against. The fact-source argument must
+# therefore be passed by keyword — as `source_document=` is below.
+@gate(gov, checks=["claims_supported", "pii_leak"],
+      facts=lambda kwargs: kwargs["source_document"])
+def summarize(llm, source_document: str) -> str:
+    return llm.complete(f"Summarize: {source_document}")
+
+result = summarize(DemoLLM(), source_document="The contract runs for three years.")
+```
+
+Claims are checked against the fact source only — `claims_supported` never consults the open world, and never authorizes: as a learned check it can tighten a verdict, never relax one.
 
 ## Why this exists
 
