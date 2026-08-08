@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from decision_governor import Governor, GateResult, gate
+from decision_governor import GateResult, Governor, gate
 from decision_governor.core.types import CheckResult, Decision
 
 README = Path(__file__).resolve().parent.parent / "README.md"
@@ -47,7 +47,9 @@ def test_quickstart_runs_verbatim_on_a_base_install(tmp_path, monkeypatch):
 
     monkeypatch.chdir(tmp_path)
     namespace: dict[str, object] = {"__name__": "__readme__"}
-    exec(compile(block, "README.md::quickstart", "exec"), namespace)
+    # Running the README's own block, rather than a copy of it, is the point:
+    # a copy can drift, and the drift is exactly what this guards against.
+    exec(compile(block, "README.md::quickstart", "exec"), namespace)  # noqa: S102
 
     result = namespace["result"]
     assert isinstance(result, GateResult)
