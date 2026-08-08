@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.0] - 2026-08-08
 ### Added
 - G-4: instrumentation — canonical serialization (single hashed-bytes function,
   NaN/Inf forbidden), schema-v1.0 decision records with context digests (raw

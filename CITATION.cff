@@ -6,6 +6,7 @@ authors:
   - family-names: "Odingo"
     given-names: "Annette A."
 version: 0.1.0
+doi: 10.5281/zenodo.21852717
 date-released: 2026-08-08
 license: Apache-2.0
 repository-code: "https://github.com/DecisionGovernance/decision-governor"

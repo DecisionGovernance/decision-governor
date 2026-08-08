@@ -11,7 +11,7 @@ from decision_governor.core.policy import Policy, ThresholdPolicy
 from decision_governor.core.results import CheckRecord, GateResult, Verdict
 from decision_governor.core.types import Check, CheckResult, Decision, Evidence
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 __all__ = [
     "Check",
     "CheckRecord",
