@@ -64,7 +64,7 @@ Only deterministic evidence can support `ALLOW`. With no deterministic checks in
 ## Quickstart
 
 Runs verbatim on the base install: **no API keys, no LLM-provider SDKs, CPU-only.**
-
+Part 1 — deterministic governance
 ```python
 from decision_governor import Governor, gate
 from decision_governor.checks import PIILeak
