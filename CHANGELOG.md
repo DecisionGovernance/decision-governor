@@ -13,6 +13,7 @@
   export|verify` CLI, monitor snapshot with credibility-weighted gate rates,
   and EXPERIMENTAL actuarial methods (chain-ladder IBNR, Kaplan-Meier
   time-to-outcome; Cox covariates deferred to v0.2 per Amendment 2).
+- **G-5: adversarial toolkit** — prompt-injection corpus (`corpus_v1.jsonl`) with a catalogued payload set, perturbation/shift harness (rule-based, so testing the system adds no unpinned dependency to it), Clayton-copula cascade stress-testing the gate's independence assumption under lower-tail dependence, and the confident-but-wrong calibration statistic wired for CI (`--fail-on "cbw>0.02"`); misses logged by identifier, and `0 reported outcomes → undefined, not zero` enforced by fixture.
 - G-3: check library — deterministic safety/fairness checks (pii_leak with
   masked evidence, output_domain, protected_attribute_leak), hash-pinned model
   infrastructure with frozen digests, model-backed checks with injectable
